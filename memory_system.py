@@ -506,39 +506,62 @@ class SmartChatbotWithMemory:
         except:
             print("建立新的記憶系統")
     
-    def process_input(self, user_input: str) -> str:
-        """處理用戶輸入"""
+    def process_input(self, user_input: str, return_memories: bool = False) -> Union[str, Tuple[str, List[Dict]]]:
+        """
+        處理用戶輸入
+        
+        Args:
+            user_input: 用戶輸入文字
+            return_memories: 是否返回相關記憶
+            
+        Returns:
+            如果 return_memories=False: 返回回應字串
+            如果 return_memories=True: 返回 (回應字串, 相關記憶列表)
+        """
         user_input = user_input.strip()
         
         # 1. 檢查刪除請求
         deletion_result = self.memory_manager.process_deletion_request(user_input)
         if deletion_result['success']:
             self._save_memory()
+            if return_memories:
+                return deletion_result['message'], []
             return deletion_result['message']
         
         # 2. 檢查特殊指令
         if user_input.lower() in ['列出記憶', 'list memories', '顯示記憶', '記憶列表']:
             memories = self.memory_manager.list_memories()
             if not memories:
-                return "目前沒有任何記憶。"
+                message = "目前沒有任何記憶。"
+            else:
+                memory_list = "\n".join([
+                    f"[ID:{m['id']}] {m['timestamp']} - {m['text']}" 
+                    for m in memories
+                ])
+                message = f"當前記憶:\n{memory_list}"
             
-            memory_list = "\n".join([
-                f"[ID:{m['id']}] {m['timestamp']} - {m['text']}" 
-                for m in memories
-            ])
-            return f"當前記憶:\n{memory_list}"
+            if return_memories:
+                return message, memories
+            return message
         
         if user_input.lower() in ['記憶統計', 'memory stats', '統計']:
             stats = self.memory_manager.memory_system.get_memory_stats()
-            return (f"📊 記憶統計:\n"
-                   f"活躍記憶: {stats['active']}\n"
-                   f"已刪除: {stats['deleted']}\n"
-                   f"總計: {stats['total']}\n"
-                   f"需要清理: {'是' if stats['cleanup_needed'] else '否'}")
+            message = (f"📊 記憶統計:\n"
+                      f"活躍記憶: {stats['active']}\n"
+                      f"已刪除: {stats['deleted']}\n"
+                      f"總計: {stats['total']}\n"
+                      f"需要清理: {'是' if stats['cleanup_needed'] else '否'}")
+            
+            if return_memories:
+                return message, []
+            return message
         
         if user_input.lower() in ['清理記憶', 'cleanup', '整理']:
             self.memory_manager.memory_system.cleanup_deleted_memories()
-            return "記憶清理完成！"
+            message = "記憶清理完成！"
+            if return_memories:
+                return message, []
+            return message
         
         # 3. 檢測記憶請求
         memory_decision = self.memory_manager.should_remember(user_input)
@@ -584,7 +607,68 @@ class SmartChatbotWithMemory:
             
             self._save_memory()
         
+        # 9. 根據參數決定返回格式
+        if return_memories:
+            return response, relevant_memories
         return response
+    
+    def get_relevant_memories(self, user_input: str, top_k: int = 3, threshold: float = 0.6) -> List[Dict]:
+        """
+        獲取與輸入最相關的記憶
+        
+        Args:
+            user_input: 用戶輸入
+            top_k: 返回最相關的記憶數量
+            threshold: 相似度閾值
+            
+        Returns:
+            相關記憶列表，每個記憶包含 id, text, score, metadata 等資訊
+        """
+        return self.memory_manager.memory_system.search_memories(user_input, top_k, threshold)
+    
+    def add_memory_manually(self, content: str, metadata: Dict = None) -> int:
+        """
+        手動添加記憶
+        
+        Args:
+            content: 記憶內容
+            metadata: 元資料
+            
+        Returns:
+            記憶 ID
+        """
+        memory_id = self.memory_manager.memory_system.add_memory(content, metadata)
+        self._save_memory()
+        return memory_id
+    
+    def delete_memory_by_id(self, memory_id: int) -> bool:
+        """
+        根據 ID 刪除記憶
+        
+        Args:
+            memory_id: 記憶 ID
+            
+        Returns:
+            是否刪除成功
+        """
+        success = self.memory_manager.memory_system.delete_memory_by_id(memory_id)
+        if success:
+            self._save_memory()
+        return success
+    
+    def search_and_format_memories(self, user_input: str, top_k: int = 3) -> str:
+        """
+        搜索記憶並格式化為可用於 prompt 的字串
+        
+        Args:
+            user_input: 用戶輸入
+            top_k: 最多返回的記憶數量
+            
+        Returns:
+            格式化的記憶字串，可直接加入 prompt
+        """
+        memories = self.get_relevant_memories(user_input, top_k)
+        return self.memory_manager.memory_system.format_memories_for_prompt(memories)
     
     def call_language_model(self, prompt: str, user_input: str, memories: List[Dict]) -> str:
         """
