@@ -731,6 +731,257 @@ class SmartChatbotWithMemory:
             except Exception as e:
                 print(f"❌ 發生錯誤: {e}")
 
+'''
+def interactive_demo():
+    """互動式模組使用範例 - 每次輸入都進行完整的記憶處理"""
+    print("🤖 智能記憶系統互動範例")
+    print("=" * 50)
+    print("功能說明:")
+    print("✅ 自動判斷是否需要記憶內容")
+    print("🗑️ 自動處理記憶刪除請求") 
+    print("🔍 每次都搜索最相關的記憶（最多3條）")
+    print("📊 顯示詳細的處理過程")
+    print("\n輸入 'quit' 或 'exit' 結束程式")
+    print("=" * 50)
+    
+    # 初始化聊天機器人
+    chatbot = SmartChatbotWithMemory()
+    
+    while True:
+        try:
+            # 獲取用戶輸入
+            user_input = input("\n💬 你: ").strip()
+            
+            if user_input.lower() in ['quit', 'exit', '退出']:
+                print("👋 再見！")
+                break
+                
+            if not user_input:
+                continue
+            
+            print("\n" + "─" * 60)
+            print("🔄 處理流程:")
+            
+            # 1. 搜索相關記憶（每次都搜索）
+            print("\n1️⃣ 搜索相關記憶...")
+            relevant_memories = chatbot.get_relevant_memories(
+                user_input, 
+                top_k=3, 
+                threshold=0.6  # 相似度閾值，太不相關就不拿
+            )
+            
+            if relevant_memories:
+                print(f"   找到 {len(relevant_memories)} 條相關記憶:")
+                for i, memory in enumerate(relevant_memories, 1):
+                    print(f"   {i}. [相似度: {memory['score']:.3f}] {memory['text'][:50]}{'...' if len(memory['text']) > 50 else ''}")
+            else:
+                print("   沒有找到相關記憶")
+            
+            # 2. 檢查記憶觸發
+            print("\n2️⃣ 檢查記憶需求...")
+            memory_decision = chatbot.memory_manager.should_remember(user_input)
+            
+            if memory_decision['should_remember']:
+                print(f"   ✅ 需要記憶 (類型: {memory_decision['memory_type']}, 置信度: {memory_decision['confidence']:.2f})")
+                print(f"   📝 要記憶的內容: {memory_decision['extracted_content'] or user_input}")
+            else:
+                print("   ❌ 不需要記憶")
+            
+            # 3. 檢查刪除請求
+            print("\n3️⃣ 檢查刪除請求...")
+            deletion_result = chatbot.memory_manager.process_deletion_request(user_input)
+            
+            if deletion_result['success']:
+                print(f"   🗑️ 執行刪除: {deletion_result['message']}")
+                print("   刪除完成！")
+                continue
+            else:
+                print("   ❌ 沒有刪除請求")
+            
+            # 4. 生成回應（使用相關記憶）
+            print("\n4️⃣ 生成回應...")
+            
+            # 格式化記憶用於 prompt
+            memory_context = ""
+            if relevant_memories:
+                memory_context = chatbot.memory_manager.memory_system.format_memories_for_prompt(relevant_memories)
+            
+            # 建構 prompt
+            full_prompt = f"""
+{memory_context}
+
+用戶問題：{user_input}
+
+請回答：
+"""
+            
+            # 調用語言模型（這裡使用範例實現）
+            response = chatbot.call_language_model(full_prompt, user_input, relevant_memories)
+            
+            # 5. 執行記憶存儲（如果需要）
+            if memory_decision['should_remember']:
+                print("\n5️⃣ 存儲記憶...")
+                memory_content = memory_decision['extracted_content'] or user_input
+                
+                memory_id = chatbot.memory_manager.memory_system.add_memory(
+                    memory_content,
+                    metadata={
+                        'type': memory_decision['memory_type'],
+                        'confidence': memory_decision['confidence'],
+                        'reason': memory_decision['reason'],
+                        'original_input': user_input
+                    }
+                )
+                
+                print(f"   ✅ 已存儲 (ID: {memory_id}): {memory_content}")
+                chatbot._save_memory()
+                
+                # 在回應中添加確認
+                if memory_decision['memory_type'] == 'explicit':
+                    response += f"\n\n✅ 已記住 (ID:{memory_id}): {memory_content}"
+            
+            # 6. 顯示最終回應
+            print("\n" + "─" * 60)
+            print(f"🤖 助理: {response}")
+            
+            # 7. 顯示當前記憶統計
+            stats = chatbot.memory_manager.memory_system.get_memory_stats()
+            print(f"\n📊 記憶統計: 活躍 {stats['active']} | 總計 {stats['total']} | 已刪除 {stats['deleted']}")
+            
+        except KeyboardInterrupt:
+            print("\n\n👋 程式已中斷，再見！")
+            break
+        except Exception as e:
+            print(f"\n❌ 發生錯誤: {e}")
+            import traceback
+            traceback.print_exc()
+
+
+def batch_demo():
+    """批量測試範例"""
+    print("🧪 批量測試記憶系統")
+    print("=" * 50)
+    
+    chatbot = SmartChatbotWithMemory()
+    
+    # 測試用例
+    test_cases = [
+        "請記住我叫王小明",
+        "我住在新北市",
+        "我喜歡吃牛肉麵",
+        "記住我的生日是3月15日",
+        "你知道我的名字嗎？",
+        "我住在哪裡？",
+        "我喜歡吃什麼？",
+        "忘記我的名字",
+        "我的名字還記得嗎？",
+        "刪除關於食物的記憶",
+        "我喜歡什麼食物？",
+    ]
+    
+    for i, test_input in enumerate(test_cases, 1):
+        print(f"\n🧪 測試 {i}: {test_input}")
+        print("-" * 40)
+        
+        # 搜索相關記憶
+        memories = chatbot.get_relevant_memories(test_input, top_k=3, threshold=0.6)
+        print(f"相關記憶: {len(memories)} 條")
+        
+        # 處理輸入
+        response, used_memories = chatbot.process_input(test_input, return_memories=True)
+        print(f"回應: {response}")
+        
+        # 顯示統計
+        stats = chatbot.memory_manager.memory_system.get_memory_stats()
+        print(f"記憶統計: {stats['active']} 活躍 / {stats['total']} 總計")
+
+
+def api_style_demo():
+    """API 風格使用範例 - 適合整合到其他系統"""
+    print("🔌 API 風格使用範例")
+    print("=" * 50)
+    
+    class MemoryEnhancedChatbot:
+        def __init__(self):
+            self.memory_system = SmartChatbotWithMemory()
+        
+        def chat_with_memory(self, user_input: str) -> Dict:
+            """
+            帶記憶功能的聊天接口
+            
+            Returns:
+                {
+                    'response': str,           # 回應內容
+                    'relevant_memories': [...], # 使用的記憶
+                    'memory_action': str,      # 記憶動作 (none/add/delete)
+                    'memory_stats': {...}      # 記憶統計
+                }
+            """
+            result = {
+                'response': '',
+                'relevant_memories': [],
+                'memory_action': 'none',
+                'memory_stats': {},
+                'debug_info': {}
+            }
+            
+            try:
+                # 1. 搜索相關記憶
+                memories = self.memory_system.get_relevant_memories(
+                    user_input, top_k=3, threshold=0.6
+                )
+                result['relevant_memories'] = memories
+                
+                # 2. 檢查記憶需求
+                memory_decision = self.memory_system.memory_manager.should_remember(user_input)
+                result['debug_info']['memory_decision'] = memory_decision
+                
+                # 3. 檢查刪除請求
+                deletion_result = self.memory_system.memory_manager.process_deletion_request(user_input)
+                
+                if deletion_result['success']:
+                    result['response'] = deletion_result['message']
+                    result['memory_action'] = 'delete'
+                else:
+                    # 4. 生成回應
+                    response, _ = self.memory_system.process_input(user_input, return_memories=True)
+                    result['response'] = response
+                    
+                    if memory_decision['should_remember']:
+                        result['memory_action'] = 'add'
+                
+                # 5. 獲取統計
+                result['memory_stats'] = self.memory_system.memory_manager.memory_system.get_memory_stats()
+                
+            except Exception as e:
+                result['response'] = f"處理錯誤: {str(e)}"
+                result['debug_info']['error'] = str(e)
+            
+            return result
+    
+    # 使用範例
+    bot = MemoryEnhancedChatbot()
+    
+    test_inputs = [
+        "請記住我叫李華",
+        "我的愛好是攝影",
+        "你知道我是誰嗎？",
+        "忘記我的名字"
+    ]
+    
+    for user_input in test_inputs:
+        print(f"\n👤 用戶: {user_input}")
+        result = bot.chat_with_memory(user_input)
+        
+        print(f"🤖 回應: {result['response']}")
+        print(f"📝 記憶動作: {result['memory_action']}")
+        print(f"🔍 相關記憶: {len(result['relevant_memories'])} 條")
+        print(f"📊 記憶統計: {result['memory_stats']['active']} 活躍")
+        
+        if result['relevant_memories']:
+            for i, mem in enumerate(result['relevant_memories'][:2], 1):
+                print(f"   {i}. {mem['text'][:40]}... (相似度: {mem['score']:.3f})")
+
 
 def main():
     """主程式入口"""
@@ -744,4 +995,19 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "demo":
+            demo_module_usage()
+        elif sys.argv[1] == "interactive":
+            interactive_demo()
+        elif sys.argv[1] == "batch":
+            batch_demo()
+        elif sys.argv[1] == "api":
+            api_style_demo()
+        else:
+            print("可用參數: demo, interactive, batch, api")
+    else:
+        main()
+        '''
