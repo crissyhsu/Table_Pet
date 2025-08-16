@@ -1,7 +1,7 @@
 # 有記憶的語言模型系統
 ## 需事先安裝
 ```
-pip install sentence-transformers faiss-cpu numpy
+pip install -r requirements.txt
 ```
 ## 各檔案說明
 - `memory_system.py`：寫了memory系統的主要class，但目前對於「刪除部分相關記憶」以及「判斷使用者之輸入是否需要記憶」仍須加強
