@@ -1,6 +1,6 @@
 """
 視窗管理模塊
-處理究極專注模式的視窗檢測和管理
+處理究級專注模式的視窗檢測和管理
 """
 
 import sys
@@ -100,17 +100,17 @@ if sys.platform == "win32":
             
             return windows_list
         
-        def close_window(self, window_info: WindowInfo) -> bool:
-            """關閉指定視窗"""
+        def close_window(self, hwnd: int) -> bool:
+            """關閉指定視窗 - 修正版本"""
             try:
                 # 先嘗試友好地關閉
-                win32gui.PostMessage(window_info.hwnd, win32con.WM_CLOSE, 0, 0)
+                win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
                 time.sleep(0.5)
                 
                 # 檢查是否還存在
-                if win32gui.IsWindow(window_info.hwnd) and win32gui.IsWindowVisible(window_info.hwnd):
+                if win32gui.IsWindow(hwnd) and win32gui.IsWindowVisible(hwnd):
                     # 強制關閉
-                    win32gui.DestroyWindow(window_info.hwnd)
+                    win32gui.DestroyWindow(hwnd)
                 
                 return True
             except Exception as e:
@@ -133,6 +133,8 @@ if sys.platform == "win32":
                 width = right - left
                 height = bottom - top
                 win32gui.MoveWindow(window_info.hwnd, x, y, width, height, True)
+                # 更新 window_info 的 rect
+                window_info.rect = (x, y, x + width, y + height)
                 return True
             except Exception as e:
                 print(f"移動視窗失敗: {e}")
@@ -160,13 +162,13 @@ else:
         """非Windows平台的視窗管理器（簡化版）"""
         
         def __init__(self):
-            print("⚠️ 當前平台不支援完整的視窗管理功能")
+            print("⚠️ 當前平台不支持完整的視窗管理功能")
         
         def get_visible_windows(self) -> List[WindowInfo]:
             """獲取可見視窗（簡化版）"""
             return []
         
-        def close_window(self, window_info: WindowInfo) -> bool:
+        def close_window(self, hwnd: int) -> bool:
             """關閉視窗（簡化版）"""
             return False
         
@@ -180,71 +182,24 @@ else:
 
 
 class FocusModeHandler:
-    """專注模式處理器 - 改進版"""
+    """專注模式處理器 - 修正版"""
+    
     def __init__(self, pet_widget):
         self.pet_widget = pet_widget
         self.window_manager = WindowManager()
         self.last_check_time = 0
-        self.check_interval = 3 # 秒
+        self.check_interval = 3  # 秒
         # 僅處理列表中指定的應用程式
-        self.target_list = {'chrome.exe', 'msedge.exe', 'brave.exe'}
-        # 新增已忽略的視窗列表，避免重複詢問
+        self.target_processes = {
+            'chrome.exe', 'msedge.exe', 'brave.exe', 'firefox.exe',
+            'discord.exe', 'telegram.exe', 'line.exe', 'wechat.exe',
+            'spotify.exe', 'vlc.exe', 'potplayer.exe'
+        }
+        # 已忽略的視窗列表，避免重複詢問
         self.ignored_windows = set()
+        # 已處理過的視窗，避免重複處理
+        self.processed_windows = set()
 
-    def check_and_handle_distracting_windows(self):
-        """檢查並處理分心視窗"""
-        if not self.should_check_windows():
-            return False
-            
-        windows = self.window_manager.get_visible_windows()
-        
-        # 遍歷所有非當前應用程式的視窗
-        for window in windows:
-            # 排除桌寵自己的視窗
-            if window.title == self.pet_widget.windowTitle():
-                continue
-            
-            # 僅處理目標列表中的應用程式
-            if window.process_name.lower() not in self.target_list:
-                print(f"✅ 視窗 '{window.title}' 不在目標列表中，跳過。")
-                continue
-            
-            # 如果這個視窗已經被忽略過，則跳過
-            if window.hwnd in self.ignored_windows:
-                print(f"✅ 視窗 '{window.title}' 已被使用者忽略，跳過。")
-                continue
-            
-            # 偵測到需要處理的視窗
-            print(f"⚠️ 偵測到目標視窗：'{window.title}'")
-            left, top, right, bottom = window.rect
-            window_center_x = left + (right - left) // 2
-            
-            # 詢問使用者，並根據回答決定是否要處理
-            reply_is_yes = self.pet_widget.show_confirm_dialog(f"這是寫作業會用到的嗎？\n(應用程式: {window.title})")
-            
-            if not reply_is_yes: # 使用者選擇「否」
-                print("❌ 使用者選擇否，開始處理視窗")
-                
-                # 決定桌寵要走向的位置
-                screen = QApplication.primaryScreen().geometry()
-                pet_width = self.pet_widget.width()
-                pet_height = self.pet_widget.height()
-                
-                if self.pet_widget.pos().x() < window_center_x:
-                    target_x = max(0, left - pet_width)
-                else:
-                    target_x = min(screen.width() - pet_width, right)
-                target_y = min(screen.height() - pet_height, bottom)
-
-                self.pet_widget._walk_to_window_and_throw(target_x, target_y, window)
-                return True
-            else: # 使用者選擇「是」
-                print("✅ 使用者選擇是，將此視窗加入忽略列表")
-                self.ignored_windows.add(window.hwnd) # 將視窗句柄加入忽略列表
-                
-        self.last_check_time = time.time()
-        return False
-    
     def should_check_windows(self) -> bool:
         """判斷是否需要檢查視窗"""
         current_time = time.time()
@@ -252,98 +207,81 @@ class FocusModeHandler:
             self.last_check_time = current_time
             return True
         return False
-    
-    
-    
-    def _filter_target_windows(self, windows: List[WindowInfo]) -> List[WindowInfo]:
-        """篩選需要處理的目標視窗 - 改進版"""
-        target_windows = []
+
+    def check_and_handle_distracting_windows(self) -> bool:
+        """檢查並處理分心視窗 - 修正版"""
+        if not self.should_check_windows():
+            return False
+            
+        windows = self.window_manager.get_visible_windows()
+        print(f"🔍 檢測到 {len(windows)} 個視窗")
         
-        # 定義分心應用程式關鍵字（更全面）
-        distracting_keywords = [
-            # 瀏覽器
-            'chrome', 'firefox', 'edge', 'browser', 'opera', 'safari',
-            # 影片娛樂
-            'youtube', 'netflix', 'twitch', 'bilibili', 'disney',
-            # 遊戲
-            'game', 'steam', 'epic', 'origin', 'uplay', 'battle.net',
-            # 社交軟體
-            'discord', 'telegram', 'wechat', 'line', 'whatsapp', 
-            'facebook', 'instagram', 'tiktok', 'twitter', 'weibo',
-            # 其他娛樂
-            'spotify', 'music', 'video', 'vlc', 'media'
-        ]
-        
-        # 排除的程式（不應該被關閉的）
-        excluded_processes = {
-            'python.exe', 'pythonw.exe', 'explorer.exe', 'dwm.exe',
-            'taskmgr.exe', 'notepad.exe', 'cmd.exe', 'powershell.exe',
-            'code.exe', 'devenv.exe'  # 開發工具
-        }
-        
-        print("🔍 開始篩選分心視窗...")
-        
+        # 遍歷所有視窗
         for window in windows:
-            # 跳過排除的程式
-            if window.process_name.lower() in excluded_processes:
+            # 排除桌寵自己的視窗
+            if 'python' in window.process_name.lower():
                 continue
             
-            # 跳過桌寵自己的視窗
-            if 'python' in window.process_name.lower() and '計時器' in window.title:
+            # 僅處理目標列表中的應用程式
+            if window.process_name.lower() not in self.target_processes:
                 continue
             
-            window_text = (window.title + " " + window.process_name).lower()
-            print(f"🔍 檢查視窗: {window.title} ({window.process_name})")
+            # 如果這個視窗已經被忽略過，則跳過
+            if window.hwnd in self.ignored_windows:
+                continue
+                
+            # 如果這個視窗已經處理過，則跳過
+            if window.hwnd in self.processed_windows:
+                continue
             
-            # 檢查是否包含分心關鍵字
-            for keyword in distracting_keywords:
-                if keyword in window_text:
-                    print(f"🎯 發現分心視窗 (關鍵字: {keyword}): {window.title}")
-                    target_windows.append(window)
-                    break
-        
-        return target_windows
+            # 檢測到需要處理的視窗
+            print(f"⚠️ 檢測到目標視窗：'{window.title}' ({window.process_name})")
+            
+            # 詢問使用者
+            reply_is_yes = self.pet_widget.show_confirm_dialog(
+                f"這是寫作業會用到的嗎？\n(應用程式: {window.title})"
+            )
+            
+            if reply_is_yes:  # 使用者選擇「是」
+                print("✅ 使用者選擇是，將此視窗加入忽略列表")
+                self.ignored_windows.add(window.hwnd)
+            else:  # 使用者選擇「否」
+                print("❌ 使用者選擇否，開始處理視窗")
+                self.processed_windows.add(window.hwnd)
+                self._handle_single_window(window)
+                return True
+                
+        return False
     
     def _handle_single_window(self, window_info: WindowInfo):
-        """處理單個視窗 - 改進版"""
+        """處理單個視窗 - 修正版"""
         print(f"🎯 開始處理分心視窗: {window_info.title}")
         
         try:
             # 獲取視窗位置
             left, top, right, bottom = window_info.rect
-            window_width = right - left
-            window_height = bottom - top
+            window_center_x = (left + right) // 2
             
-            print(f"📏 視窗尺寸: {window_width}x{window_height}")
-            print(f"📍 視窗位置: ({left}, {top}) 到 ({right}, {bottom})")
-            
-            # 計算視窗中心點
-            window_center_x = left + window_width // 2
-            window_center_y = top + window_height // 2
-            
-            screen = QApplication.primaryScreen().geometry()
-            print(f"📺 螢幕尺寸: {screen.width()}x{screen.height()}")
-            
-            # 決定桌寵要走向的位置（視窗的角落）
-            # ...
             # 獲取螢幕尺寸
             screen = QApplication.primaryScreen().geometry()
             pet_width = self.pet_widget.width()
             pet_height = self.pet_widget.height()
             
-            # 根據視窗與寵物的相對位置決定走向
-            if window_center_x < self.pet_widget.x:
-                # 視窗在桌寵左邊，走向視窗的左下角
-                target_x = max(0, left - pet_width)
-                target_y = min(screen.height() - pet_height, bottom)
+            # 根據桌寵與視窗的相對位置決定走向
+            if self.pet_widget.pos().x() < window_center_x:
+                # 桌寵在視窗左邊，走向視窗左側
+                target_x = max(0, left - pet_width - 20)  # 確保不走出螢幕
                 print("📍 目標：視窗左側")
             else:
-                # 視窗在桌寵右邊，走向視窗的右下角
-                target_x = min(screen.width() - pet_width, right)
-                target_y = min(screen.height() - pet_height, bottom)
+                # 桌寵在視窗右邊，走向視窗右側
+                target_x = min(screen.width() - pet_width, right + 20)  # 確保不走出螢幕
                 print("📍 目標：視窗右側")
-            # ...
+            
+            # Y軸位置設在視窗底部附近
+            target_y = min(screen.height() - pet_height, bottom - 50)
+            
             print(f"🎯 桌寵目標位置: ({target_x}, {target_y})")
+            print(f"📏 螢幕範圍: {screen.width()}x{screen.height()}")
             
             # 桌寵開始行動
             self.pet_widget._walk_to_window_and_throw(target_x, target_y, window_info)
