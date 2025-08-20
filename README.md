@@ -12,6 +12,7 @@ pip install -r requirements.txt
 - `chat_dialog.py`：控制對話框資訊(字體大小、顯示格式......那些)
 - `desktop_pet.py`：控制小桌寵的動作與選單
 - `window_manager.py`：專門處理丟視窗的code
+- `study_timer.py`：控制「陪讀模式」的計時器視窗
 ---
 這邊是單純測試用的code：
 - `Find_mem_to_LLM.py`：一個確認`memory_system.py`中的功能外部調用是否正常的測試檔(執行下去輸入想講的話就行)
