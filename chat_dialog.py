@@ -256,7 +256,7 @@ class ChatDialog(QDialog):
             
             # 重新添加所有內容
             for line in new_lines:
-                if line.startswith("🧑 你:") or line.startswith("你:"):
+                if line.startswith("😺 你:") or line.startswith("你:"):
                     continue  # 跳過，因為會在下面重新格式化
                 elif line.strip():
                     self.chat_display.append(line)
