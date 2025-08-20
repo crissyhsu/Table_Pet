@@ -1,5 +1,5 @@
 """
-桌面寵物控制模塊
+桌面寵物控制模組 - 修正版
 處理桌寵的顯示、動畫和互動
 """
 
@@ -154,7 +154,7 @@ class DesktopPet(QWidget):
             focus_action.triggered.connect(self._start_focus_mode)
         interaction_menu.addAction(focus_action)
         
-        # 如果讀書模式開啟，添加停止選項
+        # *** 修改重點：只有在真正活動時才顯示停止選項 ***
         if self.study_mode_active:
             stop_study_action = QAction("⏹️ 停止讀書陪伴", self)
             stop_study_action.triggered.connect(self._stop_study_mode)
@@ -235,16 +235,19 @@ class DesktopPet(QWidget):
             print(f"📚 開始讀書陪伴模式，時長：{study_minutes}分鐘")
         
     def _stop_study_mode(self):
-        """停止讀書陪伴模式"""
+        """停止讀書陪伴模式 - 修正版：不會關閉桌寵"""
         if not self.study_mode_active:
             return
         
+        print("📚 停止讀書陪伴模式...")
+        
+        # *** 修改重點：先設置狀態為False ***
         self.study_mode_active = False
         self.study_timer.stop()
         
         # 關閉倒數計時器視窗
         if hasattr(self, 'study_timer_widget'):
-            self.study_timer_widget.close()
+            #self.study_timer_widget.close()
             delattr(self, 'study_timer_widget')
         
         # 回到待機狀態
@@ -252,9 +255,16 @@ class DesktopPet(QWidget):
         print("📚 讀書陪伴模式已停止")
     
     def _on_study_time_finished(self):
-        """學習時間結束"""
+        """學習時間結束 - 修正版：不會關閉桌寵"""
+        print("⏰ 學習時間自然結束")
+        
+        # *** 修改重點：先停止模式，再顯示訊息 ***
         self._stop_study_mode()
+        
+        # 顯示完成訊息（但不會觸發關閉）
         QMessageBox.information(self, "讀書陪伴", "學習時間結束！辛苦了～ 🎉")
+        
+        print("✅ 學習完成流程結束，桌寵繼續運行")
     
     def _start_focus_mode(self):
         """開始究級專注模式"""
@@ -347,7 +357,7 @@ class DesktopPet(QWidget):
         self.target_y = max(0, min(target_y, screen.height() - self.height()))
         
         print(f"🎯 設置目標位置: ({self.target_x}, {self.target_y})")
-        print(f"📍 當前位置: ({self.x}, {self.y})")
+        print(f"🔍 當前位置: ({self.x}, {self.y})")
         
         self.walk_callback = callback
         
@@ -574,8 +584,8 @@ class DesktopPet(QWidget):
     def _finish_window_handling(self):
         """完成視窗處理，返回原位 - 修正版"""
         print("🏠 準備返回原位")
-        print(f"📍 原位座標: ({self.original_x}, {self.original_y})")
-        print(f"📍 當前座標: ({self.x}, {self.y})")
+        print(f"🔍 原位座標: ({self.original_x}, {self.original_y})")
+        print(f"🔍 當前座標: ({self.x}, {self.y})")
         
         # 走回原位
         self._walk_to_position(self.original_x, self.original_y, callback=self._return_to_previous_state)
@@ -669,124 +679,6 @@ class DesktopPet(QWidget):
             self.is_falling = True
             self.fall_speed = 0
             self.fall_timer.start(30)  # 30ms 更新一次，讓下落看起來流暢
-    
-    def _setup_throw_animation(self):
-        """設置拋物線動畫參數"""
-        screen = QApplication.primaryScreen().geometry()
-        window_rect = self.target_window.rect
-        left, top, right, bottom = window_rect
-        
-        # 動畫起始點：視窗當前位置
-        self.throw_start_x = left
-        self.throw_start_y = top
-        
-        # 動畫結束點：根據拋擲方向決定
-        window_center_x = (left + right) // 2
-        if self.x < window_center_x:
-            # 桌寵在左邊，向右拋
-            self.throw_end_x = screen.width() + 200
-        else:
-            # 桌寵在右邊，向左拋
-            self.throw_end_x = -200
-        
-        self.throw_end_y = -200  # 拋到螢幕上方外
-        
-        # 拋物線控制點（創造弧形軌跡）
-        self.throw_control_x = (self.throw_start_x + self.throw_end_x) // 2
-        self.throw_control_y = min(self.throw_start_y, self.throw_end_y) - 150
-        
-        # 動畫參數
-        self.throw_animation_step = 0
-        self.throw_total_steps = 40  # 總步數，控制動畫速度
-        
-        print(f"🎬 拋物線動畫設置完成:")
-        print(f"   起點: ({self.throw_start_x}, {self.throw_start_y})")
-        print(f"   終點: ({self.throw_end_x}, {self.throw_end_y})")
-        print(f"   控制點: ({self.throw_control_x}, {self.throw_control_y})")
-    
-    def _update_throw_animation(self, window_manager):
-        """更新拋物線動畫 - 修正版"""
-        if not hasattr(self, 'target_window') or not hasattr(self, 'throw_animation_step'):
-            print("❌ 動畫參數缺失，停止動畫")
-            self._cleanup_throw_animation()
-            return
-        
-        try:
-            # 計算動畫進度 (0.0 到 1.0)
-            progress = self.throw_animation_step / self.throw_total_steps
-            
-            if progress >= 1.0:
-                print("🎬 拋物線動畫完成，關閉視窗")
-                # 動畫完成，關閉視窗
-                close_success = window_manager.close_window(self.target_window.hwnd)
-                if close_success:
-                    print(f"✅ 成功關閉視窗: {self.target_window.title}")
-                else:
-                    print(f"⚠️ 關閉視窗可能失敗: {self.target_window.title}")
-                
-                # 清理動畫相關變數
-                self._cleanup_throw_animation()
-                
-                # 完成動作
-                QTimer.singleShot(500, self._finish_window_handling)
-                return
-            
-            # 貝茲曲線計算（二次貝茲曲線，創造拋物線效果）
-            t = progress
-            one_minus_t = 1 - t
-            
-            # 計算當前位置
-            current_x = int(
-                one_minus_t * one_minus_t * self.throw_start_x +
-                2 * one_minus_t * t * self.throw_control_x +
-                t * t * self.throw_end_x
-            )
-            
-            current_y = int(
-                one_minus_t * one_minus_t * self.throw_start_y +
-                2 * one_minus_t * t * self.throw_control_y +
-                t * t * self.throw_end_y
-            )
-            
-            # 移動視窗
-            move_success = window_manager.move_window(self.target_window, current_x, current_y)
-            
-            if not move_success and self.throw_animation_step < 5:
-                print(f"⚠️ 移動視窗失敗 (步驟 {self.throw_animation_step})")
-            
-            # 更新步數
-            self.throw_animation_step += 1
-            
-            # 加速效果（重力模擬）
-            if progress > 0.6:
-                self.throw_animation_step += 0.8  # 後段加速
-            
-            if self.throw_animation_step % 5 == 0:  # 每5步輸出一次進度
-                print(f"🎬 拋物線進度: {progress:.1%}, 位置: ({current_x}, {current_y})")
-            
-        except Exception as e:
-            print(f"❌ 拋物線動畫更新失敗: {e}")
-            import traceback
-            traceback.print_exc()
-            self._cleanup_throw_animation()
-            self._direct_close_window()
-    
-    def _direct_close_window(self):
-        """直接關閉視窗（後備方案）"""
-        print("🔧 使用後備方案直接關閉視窗")
-        try:
-            from window_manager import WindowManager
-            window_manager = WindowManager()
-            close_success = window_manager.close_window(self.target_window.hwnd)
-            if close_success:
-                print(f"✅ 後備方案成功關閉視窗: {self.target_window.title}")
-            else:
-                print(f"❌ 後備方案也無法關閉視窗: {self.target_window.title}")
-        except Exception as e:
-            print(f"❌ 後備方案失敗: {e}")
-        
-        # 無論成功與否都要完成處理流程
-        self._finish_window_handling()
     
     def mousePressEvent(self, event):
         """處理滑鼠按下事件"""

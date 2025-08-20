@@ -193,7 +193,7 @@ class FocusModeHandler:
         self.target_processes = {
             'chrome.exe', 'msedge.exe', 'brave.exe', 'firefox.exe',
             'discord.exe', 'telegram.exe', 'line.exe', 'wechat.exe',
-            'spotify.exe', 'vlc.exe', 'potplayer.exe'
+            'spotify.exe', 'vlc.exe', 'potplayer.exe','HoYoPlay.exe'
         }
         # 已忽略的視窗列表，避免重複詢問
         self.ignored_windows = set()
