@@ -11,9 +11,10 @@ pip install -r requirements.txt
 - `llm_api.py`：處理把prompt推給LLM的code，如果想換一個model，直接改model名稱就行
 - `chat_dialog.py`：控制對話框資訊(字體大小、顯示格式......那些)
 - `desktop_pet.py`：控制小桌寵的動作與選單
+- `window_manager.py`：專門處理丟視窗的code
 ---
 這邊是單純測試用的code：
-- `Find_mem_to_LLM`：一個確認`memory_system.py`中的功能外部調用是否正常的測試檔(執行下去輸入想講的話就行)
+- `Find_mem_to_LLM.py`：一個確認`memory_system.py`中的功能外部調用是否正常的測試檔(執行下去輸入想講的話就行)
 - `LLM_test2.py`：裡面寫了如何用`OpenRouter`的API去掉用免費的大語言模型(API Key需自行上`OpenRouter`申請)
 - `Table_Pet_to_LLM.py`：對角色右鍵就會出現對話選項，可以向LLM發送使用者的輸入
 
