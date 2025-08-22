@@ -72,6 +72,10 @@ class DesktopPet(QWidget):
         
         self.move_timer = QTimer()
         self.move_timer.timeout.connect(self.update_position)
+
+        #Take速度要比別人快，所以單獨開一個計時器
+        self.take_animation_timer = QTimer()
+        self.take_animation_timer.timeout.connect(self.update_take_animation)
         
         # 讀書陪伴模式相關
         self.study_mode_active = False
@@ -624,8 +628,8 @@ class DesktopPet(QWidget):
     
     def set_animation_state(self, state: str):
         """設置動畫狀態"""
-        print(f"🔍 設置動畫狀態: {state}")
-        print(f"   take_frames 數量: {len(self.take_frames) if hasattr(self, 'take_frames') else '屬性不存在'}")
+        #print(f"設置動畫狀態: {state}")
+        #print(f"   take_frames 數量: {len(self.take_frames) if hasattr(self, 'take_frames') else '屬性不存在'}")
 
         # 檢查是否有對應的動畫幀
         if state == PetAnimationState.WALKING and not self.walk_frames:
@@ -635,8 +639,6 @@ class DesktopPet(QWidget):
             QMessageBox.information(self, "提示", "沒有可用的學習動畫")
             return
         elif state == PetAnimationState.TAKE and not self.take_frames:
-            print(f"🔍 設置動畫狀態: {state}")
-            print(f"   take_frames 數量: {len(self.take_frames) if hasattr(self, 'take_frames') else '屬性不存在'}")
             QMessageBox.information(self, "提示", "沒有可用的拖動動畫")
             return
             
@@ -652,6 +654,19 @@ class DesktopPet(QWidget):
             self.is_walking = False
             self.move_timer.stop()
     
+        if state == PetAnimationState.TAKE and self.take_frames:
+                self.animation_timer.stop()
+                self.take_animation_timer.start(50) 
+        else:
+                self.take_animation_timer.stop()
+                if not self.animation_timer.isActive():
+                    self.animation_timer.start(150)
+
+    def update_take_animation(self):
+        if self.current_state == PetAnimationState.TAKE and self.take_frames:
+            self.frame_index = (self.frame_index + 1) % len(self.take_frames)
+            self.label.setPixmap(self.take_frames[self.frame_index])
+
     def update_animation(self):
         """更新動畫幀"""
         if self.current_state == PetAnimationState.WALKING and self.walk_frames:
@@ -660,6 +675,7 @@ class DesktopPet(QWidget):
             frames = self.study_frames
         elif self.current_state == PetAnimationState.TAKE and self.take_frames:
             frames = self.take_frames
+            #self.frame_index += 10
         elif self.current_state == PetAnimationState.THROW and self.throw_frames:
             frames = self.throw_frames
         else:
