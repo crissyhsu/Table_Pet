@@ -56,7 +56,7 @@ class SmartDesktopPetApp:
         """初始化桌寵界面"""
         try:
             # 載入動畫資源
-            idle_images, walk_images, errors = validate_image_folders("Idle", "Walk")
+            idle_images, walk_images, take_images, errors = validate_image_folders("Idle", "Walk", take_folder="Take")
             
             if errors:
                 for error in errors:
@@ -64,9 +64,10 @@ class SmartDesktopPetApp:
                 if not idle_images:
                     QMessageBox.critical(None, "錯誤", "找不到必要的待機動畫圖片！\n請確保 'Idle' 資料夾存在並包含圖片。")
                     sys.exit(1)
+
             
             # 創建桌寵
-            self.pet_widget = DesktopPet(idle_images, walk_images)
+            self.pet_widget = DesktopPet(idle_images, walk_images = walk_images,take_images=take_images)
             
             # 設置回調函數
             self.pet_widget.set_callbacks(
