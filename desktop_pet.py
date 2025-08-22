@@ -17,7 +17,7 @@ class PetAnimationState:
     IDLE = "Idle"
     WALKING = "Walk"
     STUDYING = "Study"  # 讀書陪伴模式 - 未畫好，先用Walk
-    TAKE = "Take"       # 被拖拽時的動畫 - 未畫好，先用Walk
+    TAKE = "Take"       
     THROW = "Throw"     # 拋擲其他視窗時的動畫 - 未畫好，先用Walk
 
 
@@ -27,7 +27,7 @@ class DesktopPet(QWidget):
     # 信號
     study_time_finished = pyqtSignal()
     
-    def __init__(self, idle_images: List[str], walk_images: List[str] = None, move_speed: int = 8):
+    def __init__(self, idle_images: List[str], walk_images: List[str] = None, take_images: List[str] = None, move_speed: int = 8):
         super().__init__()
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
         self.setAttribute(Qt.WA_TranslucentBackground)
@@ -37,10 +37,17 @@ class DesktopPet(QWidget):
         self.previous_state = PetAnimationState.IDLE  # 保存之前的狀態
         self.idle_frames = [QPixmap(img_path) for img_path in idle_images]
         self.walk_frames = [QPixmap(img_path) for img_path in walk_images] if walk_images else []
+        self.take_frames = [QPixmap(img_path) for img_path in take_images] if take_images else []
+
+        print(f"🔍 DesktopPet 初始化除錯:")
+        print(f"   take_images 參數: {take_images}")
+        print(f"   take_frames 數量: {len(self.take_frames)}")
+        if self.take_frames:
+            print(f"   第一張圖片載入成功: {self.take_frames[0].isNull() == False}")
         
         # TODO: 以下動畫資料夾未完成繪圖，暫時使用walk_frames代替
         self.study_frames = self.walk_frames.copy()  # 將來替換為Study資料夾
-        self.take_frames = self.walk_frames.copy()   # 將來替換為Take資料夾  
+        #self.take_frames = self.take_frames.copy()  
         self.throw_frames = self.walk_frames.copy()  # 將來替換為Throw資料夾
         
         self.frame_index = 0
@@ -173,6 +180,11 @@ class DesktopPet(QWidget):
             walk_action = QAction("🚶 向左走", self)
             walk_action.triggered.connect(lambda: self.set_animation_state(PetAnimationState.WALKING))
             action_menu.addAction(walk_action)
+        
+        if self.take_frames:  # 只有在有拖曳動畫時才顯示
+            take_action = QAction("✋ 拖曳動作", self)
+            take_action.triggered.connect(lambda: self.set_animation_state(PetAnimationState.TAKE))
+            action_menu.addAction(take_action)
         
         context_menu.addSeparator()
         
@@ -612,12 +624,20 @@ class DesktopPet(QWidget):
     
     def set_animation_state(self, state: str):
         """設置動畫狀態"""
+        print(f"🔍 設置動畫狀態: {state}")
+        print(f"   take_frames 數量: {len(self.take_frames) if hasattr(self, 'take_frames') else '屬性不存在'}")
+
         # 檢查是否有對應的動畫幀
         if state == PetAnimationState.WALKING and not self.walk_frames:
             QMessageBox.information(self, "提示", "沒有可用的走路動畫")
             return
         elif state == PetAnimationState.STUDYING and not self.study_frames:
             QMessageBox.information(self, "提示", "沒有可用的學習動畫")
+            return
+        elif state == PetAnimationState.TAKE and not self.take_frames:
+            print(f"🔍 設置動畫狀態: {state}")
+            print(f"   take_frames 數量: {len(self.take_frames) if hasattr(self, 'take_frames') else '屬性不存在'}")
+            QMessageBox.information(self, "提示", "沒有可用的拖動動畫")
             return
             
         self.current_state = state
@@ -646,8 +666,10 @@ class DesktopPet(QWidget):
             frames = self.idle_frames
         
         # 切換到下一幀
-        self.frame_index = (self.frame_index + 1) % len(frames)
-        self.label.setPixmap(frames[self.frame_index])
+        if frames:
+
+            self.frame_index = (self.frame_index + 1) % len(frames)
+            self.label.setPixmap(frames[self.frame_index])
     
     def update_fall(self):
         """更新下落動畫"""
@@ -769,13 +791,26 @@ class DesktopPet(QWidget):
 
 def load_animation_frames(folder_path: str) -> List[str]:
     """載入動畫幀圖片路徑"""
+    print(f"🔍 載入動畫資料夾: {folder_path}")
+    
     if not os.path.exists(folder_path):
+        print(f"❌ 資料夾不存在: {folder_path}")
         return []
     
-    image_files = [f for f in os.listdir(folder_path) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.gif'))]
-    image_files.sort()  # 按檔名排序
     
-    return [os.path.join(folder_path, img) for img in image_files]
+    all_files = os.listdir(folder_path)
+    #print(f"📁 資料夾中所有檔案: {all_files}")
+    
+    image_files = [f for f in all_files if f.lower().endswith(('.png', '.jpg', '.jpeg', '.gif'))]
+    #print(f"🖼️ 過濾後的圖片檔案: {image_files}")
+    
+    image_files.sort()  # 按檔名排序
+    #print(f"📋 排序後的圖片檔案: {image_files}")
+    
+    full_paths = [os.path.join(folder_path, img) for img in image_files]
+    print(f"📍 完整路徑: {full_paths}")
+    
+    return full_paths
 
 
 def validate_image_folders(idle_folder: str, walk_folder: str = None, study_folder: str = None, 
@@ -805,4 +840,4 @@ def validate_image_folders(idle_folder: str, walk_folder: str = None, study_fold
     if throw_folder and not throw_images:
         print(f"⚠️ 找不到拋擲動畫圖片在資料夾: {throw_folder}，將使用Walk動畫代替")
     
-    return idle_images, walk_images, errors
+    return idle_images, walk_images, take_images, errors
