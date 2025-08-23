@@ -12,6 +12,8 @@ from PyQt5.QtCore import Qt, QTimer, QPoint, pyqtSignal, QPropertyAnimation, QEa
 from PyQt5.QtGui import QPixmap, QCursor
 
 
+PIC_SIZE = 300
+
 class PetAnimationState:
     """寵物動畫狀態枚舉"""
     IDLE = "Idle"
@@ -39,23 +41,26 @@ class DesktopPet(QWidget):
         self.walk_frames = [QPixmap(img_path) for img_path in walk_images] if walk_images else []
         self.take_frames = [QPixmap(img_path) for img_path in take_images] if take_images else []
 
-        print(f"🔍 DesktopPet 初始化除錯:")
-        print(f"   take_images 參數: {take_images}")
-        print(f"   take_frames 數量: {len(self.take_frames)}")
-        if self.take_frames:
-            print(f"   第一張圖片載入成功: {self.take_frames[0].isNull() == False}")
+        #print(f"DesktopPet 初始化除錯:")
+        #print(f"   take_images 參數: {take_images}")
+        #print(f"   take_frames 數量: {len(self.take_frames)}")
+        #if self.take_frames:
+        #    print(f"   第一張圖片載入成功: {self.take_frames[0].isNull() == False}")
         
         # TODO: 以下動畫資料夾未完成繪圖，暫時使用walk_frames代替
         self.study_frames = self.walk_frames.copy()  # 將來替換為Study資料夾
-        #self.take_frames = self.take_frames.copy()  
         self.throw_frames = self.walk_frames.copy()  # 將來替換為Throw資料夾
         
         self.frame_index = 0
         
         # 顯示圖片的 QLabel
         self.label = QLabel(self)
-        self.label.setPixmap(self.idle_frames[0])
-        self.resize(self.idle_frames[0].size())
+        scaled_pixmap = self.idle_frames[0].scaled(PIC_SIZE, PIC_SIZE, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.label.setPixmap(scaled_pixmap)
+        self.resize(PIC_SIZE, PIC_SIZE) 
+        #self.resize(self.idle_frames[0].size())
+        #self.setFixedSize(PIC_SIZE, PIC_SIZE)
+        #self.label.setScaledContents(True)
         
         # 移動相關
         self.move_speed = move_speed
@@ -665,7 +670,8 @@ class DesktopPet(QWidget):
     def update_take_animation(self):
         if self.current_state == PetAnimationState.TAKE and self.take_frames:
             self.frame_index = (self.frame_index + 1) % len(self.take_frames)
-            self.label.setPixmap(self.take_frames[self.frame_index])
+            scaled_pixmap = self.take_frames[self.frame_index].scaled(PIC_SIZE, PIC_SIZE, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            self.label.setPixmap(scaled_pixmap)
 
     def update_animation(self):
         """更新動畫幀"""
@@ -685,7 +691,8 @@ class DesktopPet(QWidget):
         if frames:
 
             self.frame_index = (self.frame_index + 1) % len(frames)
-            self.label.setPixmap(frames[self.frame_index])
+            scaled_pixmap = frames[self.frame_index].scaled(PIC_SIZE, PIC_SIZE, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            self.label.setPixmap(scaled_pixmap)
     
     def update_fall(self):
         """更新下落動畫"""
