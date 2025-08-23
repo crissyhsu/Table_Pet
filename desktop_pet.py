@@ -12,7 +12,7 @@ from PyQt5.QtCore import Qt, QTimer, QPoint, pyqtSignal, QPropertyAnimation, QEa
 from PyQt5.QtGui import QPixmap, QCursor
 
 
-PIC_SIZE = 200
+PIC_SIZE = 300
 
 class PetAnimationState:
     """寵物動畫狀態枚舉"""
