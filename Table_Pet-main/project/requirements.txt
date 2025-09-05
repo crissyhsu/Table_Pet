@@ -1,0 +1,16 @@
+PyQt5==5.15.9
+python-dotenv==1.0.0
+sentence-transformers==2.2.2
+faiss-cpu==1.7.4
+numpy==1.24.3
+pickle-mixin==1.0.2
+
+jieba
+
+huggingface_hub==0.34.4
+fsspec==2024.12.0
+transformers==4.54.0
+torch==2.7.1
+ollama==0.4.8
+gradio==5.38.0
+requests==2.32.4

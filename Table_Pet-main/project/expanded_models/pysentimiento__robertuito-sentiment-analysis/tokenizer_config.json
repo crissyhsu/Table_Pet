@@ -1,0 +1,13 @@
+{
+  "bos_token": "<s>",
+  "cls_token": "<s>",
+  "eos_token": "</s>",
+  "mask_token": "<mask>",
+  "model_max_length": 128,
+  "name_or_path": "pysentimiento/robertuito-base-uncased",
+  "pad_token": "<pad>",
+  "sep_token": "</s>",
+  "special_tokens_map_file": "models/twerto-base-uncased/special_tokens_map.json",
+  "tokenizer_class": "PreTrainedTokenizerFast",
+  "unk_token": "<unk>"
+}

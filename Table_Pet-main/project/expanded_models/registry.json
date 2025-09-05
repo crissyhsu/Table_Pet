@@ -1,0 +1,16 @@
+[
+  {
+    "repo_id": "NYTK/text-generation-news-gpt2-small-hungarian",
+    "backend": "transformers",
+    "task": "text-generation",
+    "local_path": "C:\\Users\\USER\\Desktop\\20240223硬碟備份\\桌面\\.vscode\\暑假專題\\Project\\expanded_models\\NYTK__text-generation-news-gpt2-small-hungarian",
+    "notes": ""
+  },
+  {
+    "repo_id": "pysentimiento/robertuito-sentiment-analysis",
+    "backend": "transformers",
+    "task": "text-classification",
+    "local_path": "",
+    "notes": ""
+  }
+]
