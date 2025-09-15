@@ -19,7 +19,27 @@ pip install -r requirements.txt
 - `LLM_test2.py`：裡面寫了如何用`OpenRouter`的API去掉用免費的大語言模型(API Key需自行上`OpenRouter`申請)
 - `Table_Pet_to_LLM.py`：對角色右鍵就會出現對話選項，可以向LLM發送使用者的輸入
 
+## 檔案架構
+```
+Table_Pet/
+├── main.py              # 主程式(按這個執行就行)
+├── memory_system.py     # 記憶系統核心
+├── llm_api.py          # LLM API 處理
+├── chat_dialog.py      # 對話框介面
+├── desktop_pet.py      # 桌寵控制邏輯
+├── window_manager.py   # 視窗管理(丟視窗功能主要在這)
+├── study_timer.py      # 學習計時器
+├── requirements.txt    # 依賴套件
+└── tests/              # 測試檔案(只是每個很小的功能測試)
+    ├── Find_mem_to_LLM.py
+    ├── LLM_test2.py
+    └── Table_Pet_to_LLM.py
+```
+
 ## 之後會加強的方向與解決猜想
 1. 把小桌寵的人設記憶與使用者相關的記憶分開
 2. 回傳回覆時，分類情緒，切換小桌寵表情 
-3. ~~增強是否記憶的判斷~~(已解決) 
+3. 可以藉由貝式模型加強是否記憶的判斷
+4. 將system prompt分開儲存以實現多角色的效果
+5. 考慮轉到Godot或使用blender建立2D角色骨架，以便未來拓展多角色可快速更換角色造型
+6. 嘗試製作多角色聊天室
