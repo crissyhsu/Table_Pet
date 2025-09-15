@@ -1,5 +1,5 @@
 import requests
-from huggingface_hub import hf_hub_url
+from huggingface_hub import hf_hub_url, list_models
 from huggingface_hub import HfApi, ModelInfo
 from huggingface_hub.utils import HfHubHTTPError
 from typing import List, Dict, Optional, Callable
@@ -17,13 +17,43 @@ def human_readable_size(size_bytes: int) -> str:
     else:
         return "Unknown"
 
+# 允許呼叫：search_models(task="image-to-text") 或 search_models(modality="image")
+def search_models_simple(task: Optional[str] = None, modality: Optional[str] = None, query: Optional[str] = None, limit: int = 20) -> List[Dict]:
+    filters = {}
+    if task:
+        filters["pipeline_tag"] = task
+    # modality 可映射為 pipeline_tag 的集合（若未提供 task）
+    if modality and not task:
+        modality_to_tasks = {
+            "text": ["text-generation","text2text-generation","summarization","translation","question-answering"],
+            "image": ["image-classification","object-detection","image-segmentation","image-to-text","text-to-image"],
+            "audio": ["automatic-speech-recognition","text-to-speech"],
+            "video": ["video-classification"],
+            "multi": ["visual-question-answering","any-to-any"],
+        }
+        # 粗略抓一種常見任務作為搜尋條件（或改為多次查詢合併）
+        tasks = modality_to_tasks.get(modality, [])
+        if tasks:
+            filters["pipeline_tag"] = tasks[0]
 
-def search_models(
-    task_keywords: str,
-    user_prompt: str,
-    limit: int = 10,
-    token: Optional[str] = None
-) -> List[Dict]:
+    models = list_models(
+        search=query or "",
+        filter=filters or None,
+        sort="downloads",
+        direction=-1,
+        limit=limit
+    )
+    out = []
+    for m in models:
+        card = m.__dict__  # 取需要欄位
+        out.append({
+            "modelId": card.get("modelId"),
+            "pipeline_tag": card.get("pipeline_tag"),
+            "downloads": card.get("downloads"),
+            "likes": card.get("likes"),
+        })
+    return out
+
     """
     使用 Hugging Face API 搜尋符合任務的模型，並擷取模型大小資訊
 
@@ -140,3 +170,56 @@ def search_models_with_retry(
     if last_err:
         raise last_err
     return []
+
+def search_models(
+    task_keywords: str,
+    user_prompt: str,
+    limit: int = 10,
+    token: Optional[str] = None,
+) -> List[Dict]:
+    api = HfApi()
+    def _list(t):
+        return api.list_models(
+            pipeline_tag=task_keywords,
+            search=user_prompt,
+            sort="downloads",
+            direction=-1,
+            limit=limit,
+            full=True,
+            cardData=True,
+            token=t
+        )
+    try:
+        models = list(_list(token))
+    except HfHubHTTPError as e:
+        if "401" in str(e):
+            models = list(_list(None))
+        else:
+            raise
+
+    models_info = []
+    exts = (".bin", ".safetensors", ".onnx", ".msgpack")
+    for m in models:
+        size_bytes = 0
+        for f in (m.siblings or []):
+            if any(f.rfilename.endswith(ext) for ext in exts):
+                url = hf_hub_url(repo_id=m.modelId, filename=f.rfilename)
+                try:
+                    headers = {"Authorization": f"Bearer {token}"} if token else {}
+                    resp = requests.head(url, allow_redirects=True, timeout=8, headers=headers)
+                    size = int(resp.headers.get("content-length", 0))
+                except Exception:
+                    size = 0
+                size_bytes += size
+        size_str = human_readable_size(size_bytes)
+        models_info.append({
+            "id": m.modelId,
+            "tags": m.tags,
+            "downloads": m.downloads,
+            "likes": m.likes,
+            "lastModified": m.lastModified,
+            "task": m.pipeline_tag,
+            "private": m.private,
+            "size_mb": size_str
+        })
+    return models_info

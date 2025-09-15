@@ -6,6 +6,7 @@
 import sys
 import os
 from dotenv import load_dotenv
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QMessageBox
 
 # 導入自定義模塊
@@ -125,20 +126,19 @@ class SmartDesktopPetApp:
         """處理記憶管理命令"""
         if command == '__OPEN_MODEL_EXPANDER__':
             dlg = ModelExpanderDialog(self.pet_widget)  # 傳 parent 即可
-            if dlg.exec_():  # 使用者按下「套用」
-                backend, payload = dlg.get_selection()
-                # backend: "transformers" / "ollama" / "openrouter"
-                if backend == "transformers":
-                    model, tok = payload  # (model, tokenizer)
-                    self.llm_manager.set_backend_transformers(model, tok)
-                    QMessageBox.information(self.pet_widget, "模型切換", "✅ 已切換為本地 Transformers 模型")
-                elif backend == "ollama":
-                    model_name = payload  # str
-                    self.llm_manager.set_backend_ollama(model_name)
-                    QMessageBox.information(self.pet_widget, "模型切換", f"✅ 已切換為 Ollama（{model_name}）")
-                else:
-                    self.llm_manager.set_backend_openrouter()
-                    QMessageBox.information(self.pet_widget, "模型切換", "✅ 已切回 OpenRouter")
+            dlg.exec_()  # 讓使用者下載/登記，但忽略回傳
+            QMessageBox.information(self.pet_widget, "提示", "已更新擴充模型清單（不影響與桌寵對話所用的主模型）。")
+            return
+            
+        if command == '__OPEN_MULTIMODAL__':
+            from .model_expander_ui import MultiModalWindow
+            self._multi_modal_win = MultiModalWindow(None)
+            # 讓它是獨立的頂層窗、有標題列
+            self._multi_modal_win.setWindowFlags(self._multi_modal_win.windowFlags() | Qt.Window)
+            self._multi_modal_win.setAttribute(Qt.WA_DeleteOnClose, True)
+            self._multi_modal_win.show()
+            self._multi_modal_win.raise_()
+            self._multi_modal_win.activateWindow()
             return
         try:
             result, llm_context, relevant_memories = self.memory_bot.process_input(command)
@@ -290,6 +290,7 @@ class SmartDesktopPetApp:
 def main():
     """主函數"""
     app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(False)
     
     # 載入環境變數
     load_dotenv()

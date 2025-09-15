@@ -12,5 +12,12 @@
     "task": "text-classification",
     "local_path": "",
     "notes": ""
+  },
+  {
+    "repo_id": "TheKnight115/Finetuned_MarBERT_Arabic_Emotional_Analysis",
+    "backend": "transformers",
+    "task": "text-classification",
+    "local_path": "C:\\Users\\USER\\Desktop\\20240223硬碟備份\\桌面\\.vscode\\暑假專題\\Project\\Table_Pet-main\\project\\expanded_models\\TheKnight115__Finetuned_MarBERT_Arabic_Emotional_Analysis",
+    "notes": ""
   }
 ]

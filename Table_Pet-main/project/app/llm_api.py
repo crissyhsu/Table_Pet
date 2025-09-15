@@ -5,12 +5,12 @@ LLM API 模塊
 
 import os
 import requests
-from typing import Optional, Callable
-from PyQt5.QtCore import QThread, pyqtSignal
-
-# 新增的
 from enum import Enum
-from typing import Optional, Callable
+from typing import Dict, Any, Optional, Callable
+from PyQt5.QtCore import QThread, pyqtSignal
+from model_expander.expander_registry import get_adapter
+
+_LOADED: Dict[str, Any] = {}
 
 class LLMThread(QThread):
     """處理LLM API請求的執行緒"""
@@ -198,11 +198,9 @@ class LLMAPIManager:
         self._ollama_model_name = model_name
         self._tf_model = self._tf_tokenizer = None
 
-
 def check_api_key() -> bool:
     """檢查API Key是否設置"""
     return bool(os.getenv("LLM_API_KEY"))
-
 
 def get_api_status() -> str:
     """獲取API狀態資訊"""
@@ -211,5 +209,15 @@ def get_api_status() -> str:
     else:
         return "❌ 未設置API Key"
 
-
+def run_inference(task: str, model_id: str, payload: Dict[str, Any], **kwargs) -> Dict[str, Any]:
+    key = f"{task}::{model_id}"
+    if key not in _LOADED:
+        adapter = get_adapter(task)
+        if adapter is None:
+            raise ValueError(f"No adapter for task={task}")
+        adapter.prepare(model_id, task=task, **kwargs)
+        adapter.load(model_id, **kwargs)
+        _LOADED[key] = adapter
+    adapter = _LOADED[key]
+    return adapter.infer(payload, **kwargs)
 

@@ -153,10 +153,18 @@ class DesktopPet(QWidget):
         # chat_action.triggered.connect(lambda: self.on_chat_request() if self.on_chat_request else None)
         context_menu.addAction(chat_action)
         
-        # 在 show_context_menu 裡加入
-        expand_action = QAction("🧩 擴充/切換模型", self)
+        # 擴充與切換模型選項
+        ExpandingModel_menu = context_menu.addMenu("🧩 擴充/切換模型")
+
+        # 下載擴充模型
+        expand_action = QAction("⬇️ 擴充模型", self)
         expand_action.triggered.connect(lambda: self.on_memory_command('__OPEN_MODEL_EXPANDER__') if self.on_memory_command else None)
-        context_menu.addAction(expand_action)
+        ExpandingModel_menu.addAction(expand_action)
+
+        # 使用擴充模型
+        multi_action = QAction("🖼 使用擴充模型（多模態）", self)
+        multi_action.triggered.connect(lambda: self.on_memory_command('__OPEN_MULTIMODAL__') if self.on_memory_command else None)
+        ExpandingModel_menu.addAction(multi_action)
 
         # 快速對話選項
         quick_chat_action = QAction("⚡ 快速對話", self)
