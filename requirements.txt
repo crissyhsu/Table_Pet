@@ -2,6 +2,8 @@ PyQt5==5.15.9
 requests==2.31.0
 python-dotenv==1.0.0
 sentence-transformers==2.2.2
-faiss-cpu==1.7.4
-numpy==1.24.3
+faiss-cpu
+numpy>=2.0.0
 pickle-mixin==1.0.2
+jieba
+pywin32
