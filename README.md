@@ -37,20 +37,20 @@ Table_Pet/
 ```
 
 ## 目前效果呈現
-1. 程式執行後，小桌寵會以透明背景出現在桌面上
+1. 程式執行後，小桌寵會以透明背景出現在桌面上//
 <img width="1644" height="1029" alt="image" src="https://github.com/user-attachments/assets/7b0294f0-5984-402c-8326-c3d6b980dd3b" />
-2. 用鼠標拖拉住小桌寵可使其播放托跩動畫，放開便會落下
+2. 用鼠標拖拉住小桌寵可使其播放托跩動畫，放開便會落下//
 <img width="992" height="482" alt="image" src="https://github.com/user-attachments/assets/972e7d49-2c1b-4bfc-9302-1bfc45280ed4" />
-3. 對小桌寵按右鍵，便會出現對話選項，點按會出現對話框
+3. 對小桌寵按右鍵，便會出現對話選項，點按會出現對話框//
  <img width="1038" height="728" alt="image" src="https://github.com/user-attachments/assets/03bb1968-eee6-4c65-b0c9-fd97c6c77f20" />
-4. 模型會根據現有的記憶回答問題(就算重啟記憶的檔案還是會在)
+4. 模型會根據現有的記憶回答問題(就算重啟記憶的檔案還是會在)//
 <img width="586" height="190" alt="image" src="https://github.com/user-attachments/assets/eca0c730-bc1b-4df3-bd73-84b1a9913a65" />
 <img width="574" height="181" alt="image" src="https://github.com/user-attachments/assets/289da691-7341-47ba-b445-09c7658af232" />
-5. 也可以主動告訴它需要記憶的內容
+5. 也可以主動告訴它需要記憶的內容//
 <img width="558" height="255" alt="image" src="https://github.com/user-attachments/assets/051be697-679c-46f7-a1b0-6297aa26dec5" />
-6. 讀書陪伴功能可設定讀書計時器，其可以任由使用者藉由鼠標移動到想要的位置
+6. 讀書陪伴功能可設定讀書計時器，其可以任由使用者藉由鼠標移動到想要的位置//
 <img width="729" height="484" alt="image" src="https://github.com/user-attachments/assets/93a7902b-fb07-45ca-8c6f-2f1811b11c6f" />
-7. 究極專注模式則是會確認桌面上是否有工作無關緊要的視窗，如果你回答「不是作業需要」，小桌寵就會將視窗以拋物線丟出去關閉
+7. 究極專注模式則是會確認桌面上是否有工作無關緊要的視窗，如果你回答「不是作業需要」，小桌寵就會將視窗以拋物線丟出去關閉//
 <img width="421" height="271" alt="image" src="https://github.com/user-attachments/assets/190c65c6-06d9-485b-991e-7d1b8c013c53" />
 <img width="1085" height="890" alt="image" src="https://github.com/user-attachments/assets/efee5b4f-3dd6-4aef-b661-d82211af018f" />
 
